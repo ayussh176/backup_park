@@ -185,8 +185,8 @@ export const HomePage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Car className="w-8 h-8 text-primary" />
-              <h1 className="text-2xl font-bold gradient-primary bg-clip-text text-transparent">
-                ParkEasy
+              <h1 className="text-2xl font-bold text-primary">
+                ParkBy
               </h1>
             </div>
 
