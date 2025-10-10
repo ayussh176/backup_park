@@ -37,7 +37,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # -------------------------#
+    # CUSTOM APPS for ParkBy   #
+    # -------------------------#
+    'users',
+    'parking',
+    'payments',
+    # Uncomment the line below after you run: pip install djangorestframework
+    'rest_framework',
+    # Uncomment the line below if you need CORS headers
+    # 'corsheaders',
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
