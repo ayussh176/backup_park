@@ -74,10 +74,15 @@ WSGI_APPLICATION = 'parkby.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'parkby_db',             # Replace with your actual DB name
+        'USER': 'parkby_user',       # Replace with your MySQL username
+        'PASSWORD': 'Ayush@123', # Replace with your MySQL password
+        'HOST': 'localhost',
+        'PORT': '3306',
     }
 }
+
 
 
 # Password validation
