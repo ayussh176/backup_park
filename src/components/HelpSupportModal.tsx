@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Send } from 'lucide-react';
 import { toast } from 'sonner';
 
+
 interface HelpSupportModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -182,7 +183,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
               <div className="text-sm text-muted-foreground text-center">
                 <p>Or reach us at:</p>
                 <p className="font-medium">parkby108@gmail.com</p>
-                <p className="font-medium">1234567890</p>
+                <p className="font-medium">+91 9422213962</p>
               </div>
             </form>
           </TabsContent>
