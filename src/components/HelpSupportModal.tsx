@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Send } from 'lucide-react';
 import { toast } from 'sonner';
-
+import emailjs from '@emailjs/browser'; // <-- Added import
 
 interface HelpSupportModalProps {
   isOpen: boolean;
@@ -25,14 +25,26 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const formRef = useRef<HTMLFormElement | null>(null); // <-- New form ref
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock submission
-    toast.success('Your message has been sent! We\'ll get back to you soon.');
-    setName('');
-    setEmail('');
-    setMessage('');
+
+    if (formRef.current) {
+      emailjs.sendForm(
+        'service_ze00nx8',      // Service ID
+        'template_31m86kv',     // Template ID
+        formRef.current,
+        '142OT1A1AYBWtOXyL'    // Public Key - replace if needed
+      ).then(() => {
+        toast.success("Your message has been sent! We'll get back to you soon.");
+        setName('');
+        setEmail('');
+        setMessage('');
+      }).catch(() => {
+        toast.error('Failed to send your message. Please try again or contact us directly.');
+      });
+    }
   };
 
   return (
@@ -53,6 +65,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
 
           <TabsContent value="faq" className="space-y-4">
             <Accordion type="single" collapsible className="w-full">
+              {/* ---------- KEEP FAQ ITEMS UNCHANGED ---------- */}
               <AccordionItem value="item-1">
                 <AccordionTrigger>How do I book a parking slot?</AccordionTrigger>
                 <AccordionContent>
@@ -67,7 +80,6 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                   </ol>
                 </AccordionContent>
               </AccordionItem>
-
               <AccordionItem value="item-2">
                 <AccordionTrigger>Can I cancel my booking?</AccordionTrigger>
                 <AccordionContent>
@@ -76,7 +88,6 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                   by parking space.
                 </AccordionContent>
               </AccordionItem>
-
               <AccordionItem value="item-3">
                 <AccordionTrigger>What payment methods are accepted?</AccordionTrigger>
                 <AccordionContent>
@@ -90,7 +101,6 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                   </ul>
                 </AccordionContent>
               </AccordionItem>
-
               <AccordionItem value="item-4">
                 <AccordionTrigger>How do I list my parking space?</AccordionTrigger>
                 <AccordionContent>
@@ -105,7 +115,6 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                   Once approved, your parking space will be visible to customers.
                 </AccordionContent>
               </AccordionItem>
-
               <AccordionItem value="item-5">
                 <AccordionTrigger>What if I can't find my vehicle type?</AccordionTrigger>
                 <AccordionContent>
@@ -114,7 +123,6 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                   other nearby parking spaces that support your vehicle type.
                 </AccordionContent>
               </AccordionItem>
-
               <AccordionItem value="item-6">
                 <AccordionTrigger>How does the slot release work?</AccordionTrigger>
                 <AccordionContent>
@@ -123,7 +131,6 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                   your stay, please make a new booking or contact the parking space owner.
                 </AccordionContent>
               </AccordionItem>
-
               <AccordionItem value="item-7">
                 <AccordionTrigger>What are the different parking categories?</AccordionTrigger>
                 <AccordionContent>
@@ -138,12 +145,14 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
             </Accordion>
           </TabsContent>
 
+          {/* ---------- CONTACT US - FULLY UPDATED FOR EMAILJS ---------- */}
           <TabsContent value="contact">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="contact-name">Name</Label>
                 <Input
                   id="contact-name"
+                  name="user_name"  // for EmailJS template variable
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -156,6 +165,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                 <Input
                   id="contact-email"
                   type="email"
+                  name="user_email"  // for EmailJS template variable
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -167,6 +177,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
                 <Label htmlFor="contact-message">Message</Label>
                 <Textarea
                   id="contact-message"
+                  name="message"  // for EmailJS template variable
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   required
