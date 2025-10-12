@@ -137,11 +137,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <DialogDescription>Sign in or create an account to continue</DialogDescription>
         </DialogHeader>
 
-        <Tabs value={mode} onValueChange={v => setMode(v as 'signin' | 'signup' | 'forgot')}>
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs value={mode} onValueChange={v => setMode(v as 'signin' | 'signup')}>
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            
           </TabsList>
 
           <TabsContent value="signin">

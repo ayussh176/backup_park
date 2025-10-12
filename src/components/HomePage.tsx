@@ -257,7 +257,7 @@ export const HomePage: React.FC = () => {
       {/* Map Section */}
       <section className="py-8">
         <div className="container mx-auto px-4">
-          <div className="h-[500px] rounded-lg overflow-hidden shadow-glow">
+          <div className="h-[350px] rounded-lg overflow-hidden shadow-glow">
             <ErrorBoundary name="MapSection" fallback={<div className="h-[500px] flex items-center justify-center text-muted-foreground border rounded-lg">Map failed to load. Please refresh.</div>}>
               <ParkingMap
                 parkingSpaces={filteredSpaces}
