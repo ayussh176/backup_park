@@ -181,8 +181,8 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
 
               <div className="text-sm text-muted-foreground text-center">
                 <p>Or reach us at:</p>
-                <p className="font-medium">support@parkeasy.com</p>
-                <p className="font-medium">+1 (555) 123-4567</p>
+                <p className="font-medium">parkby108@gmail.com</p>
+                <p className="font-medium">1234567890</p>
               </div>
             </form>
           </TabsContent>
