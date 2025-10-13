@@ -231,7 +231,6 @@ export const ParkingMap: React.FC<ParkingMapProps> = ({
         .setLngLat([parking.coordinates[1], parking.coordinates[0]])
         .setPopup(popup)
         .addTo(map.current!);
-
       // Show popup on hover
       marker.getElement().addEventListener('mouseenter', () => {
         marker.togglePopup();
@@ -239,6 +238,7 @@ export const ParkingMap: React.FC<ParkingMapProps> = ({
       marker.getElement().addEventListener('mouseleave', () => {
         marker.togglePopup();
       });
+      
 
       // Add event listeners for buttons in popup
       popup.on('open', () => {

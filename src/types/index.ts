@@ -45,6 +45,8 @@ export interface ParkingSlot {
 }
 
 export interface ParkingSpace {
+  bike: boolean;
+  car: boolean;
   id: string;
   ownerId: string;
   name: string;
