@@ -25,7 +25,7 @@ import {
   Navigation,
   Shield,
 } from 'lucide-react';
-import { ParkingSpace, VehicleType } from '@/types';
+import { ParkingSpace } from '@/types';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -45,21 +45,17 @@ export const HomePage: React.FC = () => {
   const [pendingAction, setPendingAction] = useState<'booking' | 'list' | null>(null);
 
   useEffect(() => {
-    // Get user location
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLocation([position.coords.latitude, position.coords.longitude]);
         },
-        (error) => {
-          console.log('Location access denied, using default location');
-        }
+        () => {}
       );
     }
   }, []);
 
   useEffect(() => {
-    // Filter parking spaces based on search
     if (!searchQuery.trim()) {
       setFilteredSpaces(parkingSpaces);
     } else {
@@ -120,58 +116,42 @@ export const HomePage: React.FC = () => {
     }
   };
 
-  const scrollToAvailableSpaces = () => {
-    document.getElementById('available-spaces')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 3959; // Earth's radius in miles
+  // Haversine formula for kilometers
+  const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Radius in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return +(R * c).toFixed(2);
   };
 
-  const handleCurrentLocation = () => {
+  // SINGLE "Nearest Space" BUTTON logic
+  const handleNearestClick = () => {
     setLoadingLocation(true);
-    
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
+    if (!navigator.geolocation || parkingSpaces.length === 0) {
       setLoadingLocation(false);
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const newLocation: [number, number] = [
-          position.coords.latitude,
-          position.coords.longitude
-        ];
-        setUserLocation(newLocation);
-
-        // Calculate distances and sort parking spaces by proximity
-        const spacesWithDistance = parkingSpaces.map(space => ({
-          ...space,
-          distance: calculateDistance(
-            newLocation[0],
-            newLocation[1],
-            space.coordinates[0],
-            space.coordinates[1]
-          )
-        })).sort((a, b) => a.distance - b.distance);
-
-        setFilteredSpaces(spacesWithDistance);
-        scrollToAvailableSpaces();
+        const userLoc: [number, number] = [position.coords.latitude, position.coords.longitude];
+        // Find closest parking in KM
+        const calcDist = (p: ParkingSpace) =>
+          calculateDistanceKm(userLoc[0], userLoc[1], p.coordinates[0], p.coordinates[1]);
+        const nearest = parkingSpaces.reduce((min, curr) =>
+          calcDist(curr) < calcDist(min) ? curr : min
+        );
+        setUserLocation(userLoc);
+        setSelectedParking(nearest);
         setLoadingLocation(false);
-        alert('Showing parking spaces near your location');
+        document.getElementById('map-section')?.scrollIntoView({ behavior: 'smooth' });
       },
       (error) => {
-        console.error('Error getting location:', error);
-        alert('Could not get your location. Please check permissions.');
+        alert('Location permission denied or unavailable.');
         setLoadingLocation(false);
       }
     );
@@ -189,7 +169,6 @@ export const HomePage: React.FC = () => {
                 ParkBy
               </h1>
             </div>
-
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={toggleTheme}>
                 {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -226,7 +205,6 @@ export const HomePage: React.FC = () => {
               Search by location, compare prices, and book instantly
             </p>
           </div>
-
           <div className="max-w-2xl mx-auto">
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -239,15 +217,10 @@ export const HomePage: React.FC = () => {
                   className="pl-10 h-12 bg-background/95 backdrop-blur"
                 />
               </div>
-              <Button
-                size="lg"
-                variant="secondary"
-                onClick={handleCurrentLocation}
-                disabled={loadingLocation}
-                className="h-12"
-              >
-                <Navigation className={`w-5 h-5 mr-2 ${loadingLocation ? 'animate-spin' : ''}`} />
-                Nearby Spaces
+              {/* SINGLE BUTTON for Nearest Space */}
+              <Button size="lg" variant="secondary" onClick={handleNearestClick} disabled={loadingLocation} className="h-12">
+                <MapPin className={`w-5 h-5 mr-2 ${loadingLocation ? 'animate-spin' : ''}`} />
+                Nearest Space
               </Button>
             </div>
           </div>
@@ -255,7 +228,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* Map Section */}
-      <section className="py-8">
+      <section id="map-section" className="py-8">
         <div className="container mx-auto px-4">
           <div className="h-[350px] rounded-lg overflow-hidden shadow-glow">
             <ErrorBoundary name="MapSection" fallback={<div className="h-[500px] flex items-center justify-center text-muted-foreground border rounded-lg">Map failed to load. Please refresh.</div>}>
@@ -280,8 +253,7 @@ export const HomePage: React.FC = () => {
               <Card
                 key={parking.id}
                 className="hover:shadow-glow transition-smooth cursor-pointer"
-                onClick={() => handleParkingSelect(parking)}
-              >
+                onClick={() => handleParkingSelect(parking)}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
@@ -304,10 +276,11 @@ export const HomePage: React.FC = () => {
                         <span className="font-medium">{parking.rating}</span>
                       </div>
                       <span className="text-sm text-muted-foreground">
-                        {parking.distance ? `${parking.distance} mi` : 'Nearby'}
+                        {parking.distance !== undefined
+                          ? `${parking.distance} km`
+                          : 'Nearby'}
                       </span>
                     </div>
-
                     <div className="flex items-center justify-between">
                       <span className="text-2xl font-bold text-primary">
                         ${parking.pricePerHour}
@@ -317,7 +290,6 @@ export const HomePage: React.FC = () => {
                         {parking.availableSlots} slots
                       </span>
                     </div>
-
                     <div className="flex gap-2">
                       {parking.vehicleTypes.map((type) => (
                         <Badge key={type} variant="outline" className="text-xs">
@@ -325,7 +297,6 @@ export const HomePage: React.FC = () => {
                         </Badge>
                       ))}
                     </div>
-
                     <Button className="w-full" onClick={() => handleParkingSelect(parking)}>
                       Book Now
                     </Button>

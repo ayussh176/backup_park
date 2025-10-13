@@ -47,7 +47,7 @@ export const ParkingMap: React.FC<ParkingMapProps> = ({
     // Add user location marker
     const userMarker = document.createElement('div');
     userMarker.className = 'w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg';
-    
+
     userMarkerRef.current = new mapboxgl.Marker(userMarker)
       .setLngLat([userLocation[1], userLocation[0]])
       .setPopup(
@@ -95,8 +95,8 @@ export const ParkingMap: React.FC<ParkingMapProps> = ({
         polygonLayersRef.current.push(layerId);
 
         // Determine color based on availability
-        const occupancyRate = parking.totalSlots > 0 
-          ? (parking.totalSlots - parking.availableSlots) / parking.totalSlots 
+        const occupancyRate = parking.totalSlots > 0
+          ? (parking.totalSlots - parking.availableSlots) / parking.totalSlots
           : 0;
         const fillColor = occupancyRate >= 1 ? 'rgba(239, 68, 68, 0.4)' : 'rgba(34, 197, 94, 0.4)'; // Red if full, green if available
         const lineColor = occupancyRate >= 1 ? '#ef4444' : '#22c55e';
@@ -165,26 +165,24 @@ export const ParkingMap: React.FC<ParkingMapProps> = ({
         }
       }
 
-      // ----- CHANGES START HERE -----
       // Add parking marker
-      // Green if availableSlots > 0, Red if not
       const markerColor = parking.availableSlots > 0 ? '#22c55e' : '#ef4444'; // green or red
 
       const el = document.createElement('div');
       el.className = 'parking-marker';
       el.innerHTML = `
         <div style="
-          background:${markerColor}; 
-          color:#fff; 
-          border-radius:100%; 
-          width:40px; height:40px; 
-          display:flex; 
-          align-items:center; 
-          justify-content:center; 
-          box-shadow:0 2px 8px rgba(0,0,0,0.12); 
+          background:${markerColor};
+          color:#fff;
+          border-radius:100%;
+          width:40px; height:40px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          box-shadow:0 2px 8px rgba(0,0,0,0.12);
           cursor:pointer;
           transition:transform 0.15s;
-        " 
+        "
         class="hover:scale-110">
           <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
             <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
@@ -192,7 +190,6 @@ export const ParkingMap: React.FC<ParkingMapProps> = ({
           </svg>
         </div>
       `;
-      // ----- CHANGES END HERE -----
 
       const popupContent = `
         <div class="p-3 min-w-[200px]">
@@ -238,13 +235,12 @@ export const ParkingMap: React.FC<ParkingMapProps> = ({
       marker.getElement().addEventListener('mouseleave', () => {
         marker.togglePopup();
       });
-      
 
       // Add event listeners for buttons in popup
       popup.on('open', () => {
         const bookBtn = document.querySelector(`button.book-btn[data-parking-id="${parking.id}"]`);
         const navBtn = document.querySelector(`button.nav-btn[data-parking-id="${parking.id}"]`);
-        
+
         if (bookBtn && onParkingSelect) {
           bookBtn.addEventListener('click', () => onParkingSelect(parking));
         }
@@ -257,12 +253,20 @@ export const ParkingMap: React.FC<ParkingMapProps> = ({
     });
   }, [parkingSpaces, onParkingSelect]);
 
+  // [NEW] Center/fly to newly selected parking pin
+  useEffect(() => {
+    if (!map.current || !selectedParking) return;
+    map.current.flyTo({
+      center: [selectedParking.coordinates[1], selectedParking.coordinates[0]],
+      zoom: 15,
+      speed: 1,
+    });
+  }, [selectedParking]);
+
   // Handle route display
   useEffect(() => {
     if (!map.current) return;
-
     const mapInstance = map.current;
-
     if (selectedParking && showRoute) {
       setRouteVisible(true);
 
@@ -319,7 +323,6 @@ export const ParkingMap: React.FC<ParkingMapProps> = ({
 
   const handleNavigate = (parking: ParkingSpace) => {
     if (!map.current) return;
-
     const mapInstance = map.current;
 
     // Add route
@@ -362,7 +365,6 @@ export const ParkingMap: React.FC<ParkingMapProps> = ({
 
   const clearRoute = () => {
     if (!map.current) return;
-    
     const mapInstance = map.current;
     if (mapInstance.getSource('route')) {
       mapInstance.removeLayer('route');
