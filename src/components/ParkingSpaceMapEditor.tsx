@@ -46,7 +46,7 @@ export const ParkingSpaceMapEditor: React.FC<ParkingSpaceMapEditorProps> = ({
     });
 
     // Add navigation control
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    map.current.addControl(new mapboxgl.NavigationControl(), 'top-left');
 
     // Initialize MapboxDraw
     draw.current = new MapboxDraw({

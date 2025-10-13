@@ -42,7 +42,7 @@ export const ParkingMap: React.FC<ParkingMapProps> = ({
       zoom: 13,
     });
 
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    map.current.addControl(new mapboxgl.NavigationControl(), 'top-left');
 
     // Add user location marker
     const userMarker = document.createElement('div');
@@ -165,17 +165,34 @@ export const ParkingMap: React.FC<ParkingMapProps> = ({
         }
       }
 
+      // ----- CHANGES START HERE -----
       // Add parking marker
+      // Green if availableSlots > 0, Red if not
+      const markerColor = parking.availableSlots > 0 ? '#22c55e' : '#ef4444'; // green or red
+
       const el = document.createElement('div');
       el.className = 'parking-marker';
       el.innerHTML = `
-        <div class="bg-primary text-primary-foreground rounded-full w-10 h-10 flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div style="
+          background:${markerColor}; 
+          color:#fff; 
+          border-radius:100%; 
+          width:40px; height:40px; 
+          display:flex; 
+          align-items:center; 
+          justify-content:center; 
+          box-shadow:0 2px 8px rgba(0,0,0,0.12); 
+          cursor:pointer;
+          transition:transform 0.15s;
+        " 
+        class="hover:scale-110">
+          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
             <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
             <circle cx="12" cy="10" r="3"/>
           </svg>
         </div>
       `;
+      // ----- CHANGES END HERE -----
 
       const popupContent = `
         <div class="p-3 min-w-[200px]">
@@ -214,6 +231,14 @@ export const ParkingMap: React.FC<ParkingMapProps> = ({
         .setLngLat([parking.coordinates[1], parking.coordinates[0]])
         .setPopup(popup)
         .addTo(map.current!);
+
+      // Show popup on hover
+      marker.getElement().addEventListener('mouseenter', () => {
+        marker.togglePopup();
+      });
+      marker.getElement().addEventListener('mouseleave', () => {
+        marker.togglePopup();
+      });
 
       // Add event listeners for buttons in popup
       popup.on('open', () => {
