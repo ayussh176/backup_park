@@ -9,4 +9,3 @@ def upi_qr_image(request, amount):
     response = HttpResponse(content_type="image/png")
     img.save(response, "PNG")
     return response
-
