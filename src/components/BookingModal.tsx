@@ -13,9 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ParkingSpace, VehicleType, PaymentMethod } from '@/types';
-import { Calendar, Clock, Car, CreditCard, Check } from 'lucide-react';
+import { CreditCard, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface BookingModalProps {
@@ -28,7 +27,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
   const { user, vehicles } = useAuth();
   const { createBooking } = useBooking();
 
-  const [step, setStep] = useState<'vehicle-type' | 'slot-selection' | 'details' | 'payment' | 'success'>('vehicle-type');
+  const [step, setStep] = useState<'vehicle-type' | 'slot-selection' | 'details' | 'payment' | 'upi' | 'success'>('vehicle-type');
   const [selectedVehicleType, setSelectedVehicleType] = useState<VehicleType | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
@@ -39,11 +38,21 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('upi');
   const [bookingId, setBookingId] = useState<string>('');
 
+  // UPI payment
+  const [upiId, setUpiId] = useState('');
+  const [txnRef, setTxnRef] = useState('');
+  const [showPaymentInstructions, setShowPaymentInstructions] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       setStep('vehicle-type');
       setSelectedVehicleType(null);
       setSelectedSlot(null);
+      setSelectedVehicle('');
+      setCustomVehicleNumber('');
+      setUpiId('');
+      setTxnRef('');
+      setShowPaymentInstructions(false);
     }
   }, [isOpen]);
 
@@ -76,7 +85,25 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
     return slot.pricePerHour * hours;
   };
 
-  const handlePayment = async () => {
+  // New: UPI deep link and QR
+  const upiPayAmount = calculateTotal();
+  const upiVPA = '9359444688@axl';
+  const upiPayLink = `upi://pay?pa=${upiVPA}&pn=Parking+Payment&am=${upiPayAmount}&cu=INR`;
+  const upiQrImgSrc = `/api/upi_qr_image/${upiPayAmount}/`;
+
+  const handleContinueUPI = () => {
+    if (!upiId || !upiId.match(/.+@.+/)) {
+      toast.error('Please enter a valid UPI ID');
+      return;
+    }
+    setShowPaymentInstructions(true);
+  };
+
+  const handleConfirmUPI = async () => {
+    if (!txnRef) {
+      toast.error('Please enter your UPI transaction reference');
+      return;
+    }
     if (!user || !selectedSlot || !selectedVehicleType) return;
 
     const vehicleNumber = customVehicleNumber || vehicles.find(v => v.id === selectedVehicle)?.number || '';
@@ -96,11 +123,21 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
       totalPrice: calculateTotal(),
       paymentMethod,
       status: 'upcoming' as const,
+      upiId,
+      txnRef,
     };
 
     const id = await createBooking(bookingData);
     setBookingId(id);
     setStep('success');
+  };
+
+  const handlePayment = () => {
+    if (paymentMethod === 'upi') {
+      setStep('upi');
+      return;
+    }
+    // QR or other payment methods (existing logic)
   };
 
   const handleClose = () => {
@@ -109,6 +146,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
     setSelectedSlot(null);
     setSelectedVehicle('');
     setCustomVehicleNumber('');
+    setUpiId('');
+    setTxnRef('');
+    setShowPaymentInstructions(false);
     onClose();
   };
 
@@ -166,94 +206,30 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
                 Change Type
               </Button>
             </div>
-
             {availableSlots.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">
-                  No {selectedVehicleType} slots available
-                </p>
+                <p className="text-muted-foreground">No {selectedVehicleType} slots available</p>
                 <Button className="mt-4" onClick={() => setStep('vehicle-type')}>
                   Select Different Type
                 </Button>
               </div>
             ) : (
-              <>
-                {parking.parkingLayout === 'parallel' ? (
-                  <div className="space-y-2">
-                    {availableSlots.map((slot) => (
-                      <Card
-                        key={slot.id}
-                        className={`cursor-pointer hover:border-primary transition-smooth ${
-                          selectedSlot === slot.id ? 'border-primary bg-primary/5' : ''
-                        }`}
-                        onClick={() => handleSlotSelect(slot.id)}
-                      >
-                        <CardContent className="p-3 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="text-2xl font-bold">{slot.slotNumber}</div>
-                            <div className="h-12 w-24 border-2 border-dashed rounded flex items-center justify-center text-xs">
-                              {selectedVehicleType === 'car' ? '🚗' : '🏍️'}
-                            </div>
-                          </div>
-                          <div className="text-sm font-medium">${slot.pricePerHour}/hr</div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : parking.parkingLayout === 'scattered' ? (
-                  <div className="relative h-96 border-2 rounded-lg p-4 bg-muted/20">
-                    <div className="absolute inset-0 p-4">
-                      {availableSlots.map((slot, index) => {
-                        const positions = [
-                          { top: '10%', left: '15%' },
-                          { top: '25%', left: '60%' },
-                          { top: '45%', left: '30%' },
-                          { top: '60%', left: '70%' },
-                          { top: '75%', left: '20%' },
-                          { top: '15%', left: '80%' },
-                          { top: '50%', left: '50%' },
-                          { top: '80%', left: '55%' },
-                        ];
-                        const pos = positions[index % positions.length];
-                        return (
-                          <Card
-                            key={slot.id}
-                            className={`absolute cursor-pointer hover:border-primary transition-smooth w-16 ${
-                              selectedSlot === slot.id ? 'border-primary bg-primary/5' : ''
-                            }`}
-                            style={{ top: pos.top, left: pos.left }}
-                            onClick={() => handleSlotSelect(slot.id)}
-                          >
-                            <CardContent className="p-2 text-center">
-                              <div className="text-lg font-bold">{slot.slotNumber}</div>
-                              <div className="text-xs">${slot.pricePerHour}/hr</div>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-4 gap-3">
-                    {availableSlots.map((slot) => (
-                      <Card
-                        key={slot.id}
-                        className={`cursor-pointer hover:border-primary transition-smooth ${
-                          selectedSlot === slot.id ? 'border-primary bg-primary/5' : ''
-                        }`}
-                        onClick={() => handleSlotSelect(slot.id)}
-                      >
-                        <CardContent className="p-4 text-center">
-                          <div className="text-2xl font-bold mb-1">{slot.slotNumber}</div>
-                          <div className="text-xs text-muted-foreground">
-                            ${slot.pricePerHour}/hr
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </>
+              <div className="grid grid-cols-4 gap-3">
+                {availableSlots.map((slot) => (
+                  <Card
+                    key={slot.id}
+                    className={`cursor-pointer hover:border-primary transition-smooth ${
+                      selectedSlot === slot.id ? 'border-primary bg-primary/5' : ''
+                    }`}
+                    onClick={() => handleSlotSelect(slot.id)}
+                  >
+                    <CardContent className="p-4 text-center">
+                      <div className="text-2xl font-bold mb-1">{slot.slotNumber}</div>
+                      <div className="text-xs text-muted-foreground">${slot.pricePerHour}/hr</div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
           </div>
         )}
@@ -266,7 +242,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
                 Change Slot
               </Button>
             </div>
-
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Vehicle</Label>
@@ -295,7 +270,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
                   />
                 )}
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="date">Date</Label>
@@ -307,7 +281,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
                     min={new Date().toISOString().split('T')[0]}
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="time">Start Time</Label>
                   <Input
@@ -318,7 +291,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
                   />
                 </div>
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="duration">Duration (hours)</Label>
                 <Select value={duration} onValueChange={setDuration}>
@@ -334,7 +306,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
                   </SelectContent>
                 </Select>
               </div>
-
               <Button className="w-full" onClick={handleDetailsSubmit}>
                 Continue to Payment
               </Button>
@@ -345,7 +316,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
         {step === 'payment' && (
           <div className="space-y-4">
             <h3 className="font-semibold">Payment & Summary</h3>
-
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Booking Summary</CardTitle>
@@ -377,15 +347,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
                 </div>
                 <div className="border-t pt-2 flex justify-between">
                   <span className="font-semibold">Total:</span>
-                  <span className="font-bold text-primary text-lg">${calculateTotal()}</span>
+                  <span className="font-bold text-primary text-lg">₹{calculateTotal()}</span>
                 </div>
               </CardContent>
             </Card>
-
             <div className="space-y-2">
               <Label>Payment Method</Label>
               <div className="grid grid-cols-2 gap-2">
-                {(['upi', 'qr', 'netbanking', 'card', 'cash'] as PaymentMethod[]).map((method) => (
+                {(['upi'] as PaymentMethod[]).map((method) => (
                   <Button
                     key={method}
                     type="button"
@@ -394,12 +363,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
                     className="capitalize"
                   >
                     <CreditCard className="w-4 h-4 mr-2" />
-                    {method === 'upi' ? 'UPI' : method === 'qr' ? 'QR Code' : method}
+                    {method === 'upi' ? 'UPI' : method}
                   </Button>
                 ))}
               </div>
             </div>
-
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setStep('details')}>
                 Back
@@ -408,6 +376,70 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
                 Complete Booking
               </Button>
             </div>
+          </div>
+        )}
+
+        {step === 'upi' && (
+          <div className="space-y-4">
+            {!showPaymentInstructions ? (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Enter your UPI ID</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Input
+                      placeholder="your-upi-id@bank"
+                      value={upiId}
+                      onChange={e => setUpiId(e.target.value)}
+                    />
+                  </CardContent>
+                </Card>
+                <Button className="w-full mt-2" onClick={handleContinueUPI}>
+                  Continue to UPI Payment
+                </Button>
+              </>
+            ) : (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">UPI Payment</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div>
+                      <strong>Amount:</strong> ₹{upiPayAmount}
+                    </div>
+                    <div>
+                      <strong>Pay to:</strong> {upiVPA}
+                    </div>
+                    <div>
+                      <a href={upiPayLink} target="_blank" rel="noopener" className="underline text-primary">
+                        Pay Now with UPI App
+                      </a>
+                    </div>
+                    <div className="mt-2">
+                      <img src={upiQrImgSrc} alt="Scan to Pay" style={{ width: 180 }} />
+                      <div>Or scan with your UPI app</div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Enter Transaction Reference</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Input
+                      placeholder="Transaction Reference Id"
+                      value={txnRef}
+                      onChange={e => setTxnRef(e.target.value)}
+                    />
+                  </CardContent>
+                </Card>
+                <Button className="w-full mt-2" onClick={handleConfirmUPI}>
+                  Confirm Payment and Complete Booking
+                </Button>
+              </>
+            )}
           </div>
         )}
 
@@ -434,7 +466,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Amount Paid:</span>
-                  <span className="font-bold text-success">${calculateTotal()}</span>
+                  <span className="font-bold text-success">₹{upiPayAmount}</span>
                 </div>
               </CardContent>
             </Card>
