@@ -82,6 +82,8 @@ export const OwnerDashboard: React.FC = () => {
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [parkingCoordinates, setParkingCoordinates] = useState<[number, number]>([40.7580, -73.9855]);
   const [polygonCoordinates, setPolygonCoordinates] = useState<[number, number][]>([]);
+  const [pricePerHour, setPricePerHour] = useState('10'); // Add this line with your other form states
+
 
   const ownedParkings = user ? getParkingsByOwner(user.id) : [];
   const analytics = user ? generateMockAnalytics(user.id) : null;
@@ -231,15 +233,17 @@ export const OwnerDashboard: React.FC = () => {
   };
 
   const handleEditParking = (parking: ParkingSpace) => {
-    setSelectedParking(parking);
-    setParkingName(parking.name);
-    setParkingAddress(parking.address);
-    setParkingType(parking.type);
-    setParkingCategory(parking.category);
-    setDescription(parking.description || '');
-    setVehicleTypes(parking.vehicleTypes);
-    setShowEditParkingDialog(true);
-  };
+  setSelectedParking(parking);
+  setParkingName(parking.name);
+  setParkingAddress(parking.address);
+  setParkingType(parking.type);
+  setParkingCategory(parking.category);
+  setDescription(parking.description);
+  setVehicleTypes(parking.vehicleTypes);
+  setPricePerHour(parking.pricePerHour?.toString() ?? '10'); // <-- Add this
+  setShowEditParkingDialog(true);
+};
+
 
   const handleUpdateParking = () => {
     if (!selectedParking) return;
@@ -251,6 +255,7 @@ export const OwnerDashboard: React.FC = () => {
       category: parkingCategory,
       vehicleTypes,
       description,
+      pricePerHour: parseFloat(pricePerHour), // <-- Add this line
     });
 
     resetForm();
@@ -883,6 +888,27 @@ export const OwnerDashboard: React.FC = () => {
                 rows={3}
               />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Car Price/Hour ($)</Label>
+              <Input
+                type="number"
+                value={carPrice}
+                onChange={(e) => setCarPrice(e.target.value)}
+                disabled={!vehicleTypes.includes('car') || parkingType === 'free' || parkingCategory === 'free'}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Bike Price/Hour ($)</Label>
+              <Input
+                type="number"
+                value={bikePrice}
+                onChange={(e) => setBikePrice(e.target.value)}
+                disabled={!vehicleTypes.includes('bike') || parkingType === 'free' || parkingCategory === 'free'}
+              />
+            </div>
+          </div>
+
             <Button className="w-full" onClick={handleUpdateParking}>
               Update Parking Space
             </Button>
