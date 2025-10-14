@@ -89,7 +89,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
   const upiPayAmount = calculateTotal();
   const upiVPA = '9359444688@axl';
   const upiPayLink = `upi://pay?pa=${upiVPA}&pn=Parking+Payment&am=${upiPayAmount}&cu=INR`;
-  const upiQrImgSrc = `/api/upi_qr_image/${upiPayAmount}/`;
+  const upiQrImgSrc = `http://localhost:8000/api/upi_qr_image/${upiPayAmount}/`;
+
 
   const handleContinueUPI = () => {
     if (!upiId || !upiId.match(/.+@.+/)) {
