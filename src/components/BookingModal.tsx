@@ -87,7 +87,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
 
   // New: UPI deep link and QR
   const upiPayAmount = calculateTotal();
-  const upiVPA = '9359444688@axl';
+  const upiVPA = 'yash48ashwin@oksbi';
   const upiPayLink = `upi://pay?pa=${upiVPA}&pn=Parking+Payment&am=${upiPayAmount}&cu=INR`;
   const upiQrImgSrc = `http://localhost:8000/api/upi_qr_image/${upiPayAmount}/`;
 
