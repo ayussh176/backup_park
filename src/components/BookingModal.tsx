@@ -37,11 +37,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
   const [duration, setDuration] = useState('2');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('upi');
   const [bookingId, setBookingId] = useState<string>('');
-
   // UPI payment
   const [upiId, setUpiId] = useState('');
   const [txnRef, setTxnRef] = useState('');
   const [showPaymentInstructions, setShowPaymentInstructions] = useState(false);
+  const [submittingTxn, setSubmittingTxn] = useState(false);
+  const [txnResultMsg, setTxnResultMsg] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -53,6 +54,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
       setUpiId('');
       setTxnRef('');
       setShowPaymentInstructions(false);
+      setTxnResultMsg('');
+      setSubmittingTxn(false);
     }
   }, [isOpen]);
 
@@ -85,12 +88,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
     return slot.pricePerHour * hours;
   };
 
-  // New: UPI deep link and QR
+  // UPI deep link and QR
   const upiPayAmount = calculateTotal();
   const upiVPA = 'yash48ashwin@oksbi';
   const upiPayLink = `upi://pay?pa=${upiVPA}&pn=Parking+Payment&am=${upiPayAmount}&cu=INR`;
   const upiQrImgSrc = `http://localhost:8000/api/upi_qr_image/${upiPayAmount}/`;
-
 
   const handleContinueUPI = () => {
     if (!upiId || !upiId.match(/.+@.+/)) {
@@ -100,37 +102,35 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
     setShowPaymentInstructions(true);
   };
 
+  // STEP: Submit UPI Txn Ref to backend for verification
   const handleConfirmUPI = async () => {
     if (!txnRef) {
       toast.error('Please enter your UPI transaction reference');
       return;
     }
-    if (!user || !selectedSlot || !selectedVehicleType) return;
-
-    const vehicleNumber = customVehicleNumber || vehicles.find(v => v.id === selectedVehicle)?.number || '';
-    const startDateTime = new Date(`${date}T${time}`);
-    const endDateTime = new Date(startDateTime.getTime() + parseInt(duration) * 60 * 60 * 1000);
-
-    const bookingData = {
-      userId: user.id,
-      parkingId: parking.id,
-      slotId: selectedSlot,
-      vehicleId: selectedVehicle || 'custom',
-      vehicleNumber,
-      vehicleType: selectedVehicleType,
-      startTime: startDateTime,
-      endTime: endDateTime,
-      duration: parseInt(duration),
-      totalPrice: calculateTotal(),
-      paymentMethod,
-      status: 'upcoming' as const,
-      upiId,
-      txnRef,
+    setSubmittingTxn(true);
+    // Prepare request payload
+    const paymentData = {
+      payment_id: bookingId,       // This is your booking/payment ID from context (update as needed)
+      upi_txn_id: txnRef,
     };
-
-    const id = await createBooking(bookingData);
-    setBookingId(id);
-    setStep('success');
+    try {
+      const response = await fetch('/api/submit-upi-txn/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(paymentData),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setTxnResultMsg('Transaction ID submitted! Awaiting verification.');
+        setStep('success');
+      } else {
+        setTxnResultMsg('Submission failed. Please try again.');
+      }
+    } catch (error) {
+      setTxnResultMsg('Server error. Please try again later.');
+    }
+    setSubmittingTxn(false);
   };
 
   const handlePayment = () => {
@@ -138,7 +138,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
       setStep('upi');
       return;
     }
-    // QR or other payment methods (existing logic)
+    // Add other payment method logic here if needed
   };
 
   const handleClose = () => {
@@ -150,6 +150,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
     setUpiId('');
     setTxnRef('');
     setShowPaymentInstructions(false);
+    setTxnResultMsg('');
+    setSubmittingTxn(false);
     onClose();
   };
 
@@ -160,7 +162,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
           <DialogTitle>Book Parking Slot</DialogTitle>
           <DialogDescription>{parking.name}</DialogDescription>
         </DialogHeader>
-
         {step === 'vehicle-type' && (
           <div className="space-y-4">
             <h3 className="font-semibold">Select Vehicle Type</h3>
@@ -196,7 +197,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
             </div>
           </div>
         )}
-
         {step === 'slot-selection' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -226,7 +226,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
                   >
                     <CardContent className="p-4 text-center">
                       <div className="text-2xl font-bold mb-1">{slot.slotNumber}</div>
-                      <div className="text-xs text-muted-foreground">${slot.pricePerHour}/hr</div>
+                      <div className="text-xs text-muted-foreground">₹{slot.pricePerHour}/hr</div>
                     </CardContent>
                   </Card>
                 ))}
@@ -234,7 +234,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
             )}
           </div>
         )}
-
         {step === 'details' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -313,7 +312,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
             </div>
           </div>
         )}
-
         {step === 'payment' && (
           <div className="space-y-4">
             <h3 className="font-semibold">Payment & Summary</h3>
@@ -379,7 +377,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
             </div>
           </div>
         )}
-
         {step === 'upi' && (
           <div className="space-y-4">
             {!showPaymentInstructions ? (
@@ -436,14 +433,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
                     />
                   </CardContent>
                 </Card>
-                <Button className="w-full mt-2" onClick={handleConfirmUPI}>
-                  Confirm Payment and Complete Booking
+                <Button
+                  className="w-full mt-2"
+                  onClick={handleConfirmUPI}
+                  disabled={submittingTxn}
+                >
+                  {submittingTxn ? 'Submitting...' : 'Confirm Payment and Complete Booking'}
                 </Button>
+                {txnResultMsg && <div className="mt-2 text-green-600">{txnResultMsg}</div>}
               </>
             )}
           </div>
         )}
-
         {step === 'success' && (
           <div className="space-y-6 text-center py-8">
             <div className="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center mx-auto">
