@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBooking } from '@/contexts/BookingContext';
@@ -50,6 +50,26 @@ export const CustomerDashboard: React.FC = () => {
   const userBookings = user ? getBookingsByUser(user.id) : [];
   const upcomingBookings = userBookings.filter(b => b.status === 'upcoming' || b.status === 'active');
   const pastBookings = userBookings.filter(b => b.status === 'completed' || b.status === 'cancelled');
+
+  // 🚨 AUTOFINISH BOOKING: This effect automatically checks each minute if booking should end
+  useEffect(() => {
+    const timer = setInterval(() => {
+      upcomingBookings.forEach((booking) => {
+        // booking.startTime should be ISO string, booking.duration in hours
+        const bookingEnd = new Date(booking.startTime);
+        bookingEnd.setHours(bookingEnd.getHours() + booking.duration);
+        if (
+          booking.status === 'active' &&
+          new Date() > bookingEnd
+        ) {
+          simulateBookingEnd(booking.id);
+        }
+      });
+    }, 60 * 1000); // every minute
+
+    return () => clearInterval(timer);
+  }, [upcomingBookings, simulateBookingEnd]);
+  // 🔺 END OF AUTOFINISH BOOKING
 
   const handleLogout = () => {
     logout();
