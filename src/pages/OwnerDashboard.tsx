@@ -391,7 +391,7 @@ export const OwnerDashboard: React.FC = () => {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${analytics?.totalRevenue || 0}</div>
+              <div className="text-2xl font-bold">₹{analytics?.totalRevenue || 0}</div>
               <p className="text-xs text-muted-foreground">This month</p>
             </CardContent>
           </Card>
@@ -478,7 +478,7 @@ export const OwnerDashboard: React.FC = () => {
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Price/Hour</p>
-                          <p className="text-2xl font-bold">${parking.pricePerHour}</p>
+                          <p className="text-2xl font-bold">₹{parking.pricePerHour}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Rating</p>
@@ -776,7 +776,7 @@ export const OwnerDashboard: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Car Price/Hour ($)</Label>
+                <Label>Car Price/Hour (₹)</Label>
                 <Input
                   type="number"
                   value={carPrice}
@@ -797,7 +797,7 @@ export const OwnerDashboard: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Bike Price/Hour ($)</Label>
+                <Label>Bike Price/Hour (₹)</Label>
                 <Input
                   type="number"
                   value={bikePrice}
@@ -892,7 +892,7 @@ export const OwnerDashboard: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Car Price/Hour ($)</Label>
+              <Label>Car Price/Hour (₹)</Label>
               <Input
                 type="number"
                 value={carPrice}
@@ -901,7 +901,7 @@ export const OwnerDashboard: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>Bike Price/Hour ($)</Label>
+              <Label>Bike Price/Hour (₹)</Label>
               <Input
                 type="number"
                 value={bikePrice}
@@ -997,12 +997,12 @@ export const OwnerDashboard: React.FC = () => {
               },
               {
                 name: 'Lite',
-                price: '$29/mo',
+                price: '₹29/mo',
                 features: ['Up to 5 parking spaces', 'Advanced analytics', 'Priority support', 'Custom pricing'],
               },
               {
                 name: 'Pro',
-                price: '$99/mo',
+                price: '₹99/mo',
                 features: ['Unlimited spaces', 'Full analytics suite', '24/7 support', 'API access', 'Manager accounts'],
               },
             ].map((plan) => (

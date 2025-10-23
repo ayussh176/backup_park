@@ -17,7 +17,6 @@ import { ParkingSpace, VehicleType, PaymentMethod } from '@/types';
 import { CreditCard, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
-
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -27,7 +26,7 @@ interface BookingModalProps {
 // Utility for next available quarter-hour (returns "HH:mm")
 function getNextAvailableTimeString() {
   const now = new Date();
-  let minutes = now.getMinutes();
+  const minutes = now.getMinutes();
   let addMinutes = ((Math.ceil(minutes / 15) * 15) - minutes);
   if (addMinutes === 0) addMinutes = 15;
   now.setMinutes(minutes + addMinutes);
@@ -44,7 +43,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
   const [customVehicleNumber, setCustomVehicleNumber] = useState('');
-
   // Date-time states and helpers
   const todayDateString = new Date().toISOString().split('T')[0];
   const [date, setDate] = useState(todayDateString);
@@ -73,8 +71,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
       setSubmittingTxn(false);
       setDate(todayDateString);
       setTime(getNextAvailableTimeString());
+      setBookingId('');
     }
-  }, [isOpen]);
+  }, [isOpen, todayDateString]);
 
   // Date-time sync logic
   useEffect(() => {
@@ -82,7 +81,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
       const minTime = getNextAvailableTimeString();
       if (time < minTime) setTime(minTime);
     }
-  }, [date]); // runs if date changes
+  }, [date, time, todayDateString]); // runs if date changes
 
   const availableSlots = selectedVehicleType
     ? parking.slots.filter(s => s.vehicleType === selectedVehicleType && s.status === 'available')
@@ -98,14 +97,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
     setStep('details');
   };
 
-  const handleDetailsSubmit = () => {
-    if (!selectedVehicle && !customVehicleNumber) {
-      toast.error('Please select or enter a vehicle number');
-      return;
-    }
-    setStep('payment');
-  };
-
   const calculateTotal = () => {
     const slot = parking.slots.find(s => s.id === selectedSlot);
     if (!slot) return 0;
@@ -117,6 +108,37 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
   const upiVPA = 'yash48ashwin@oksbi';
   const upiPayLink = `upi://pay?pa=${upiVPA}&pn=Parking+Payment&am=${upiPayAmount}&cu=INR`;
   const upiQrImgSrc = `http://localhost:8000/api/upi_qr_image/${upiPayAmount}/`;
+
+  // Book slot directly helper
+  const bookSlotDirectly = async () => {
+    try {
+      const bookingData = {
+        slotId: selectedSlot,
+        vehicle: customVehicleNumber || selectedVehicle,
+        date,
+        time,
+        duration: parseInt(duration),
+        userId: user?.id,
+      };
+      const id = await createBooking(bookingData);
+      setBookingId(id || '');
+      setStep('success');
+    } catch (e) {
+      toast.error('Booking failed, please try again.');
+    }
+  };
+
+  const handleDetailsSubmit = () => {
+    if (!selectedVehicle && !customVehicleNumber) {
+      toast.error('Please select or enter a vehicle number');
+      return;
+    }
+    if (calculateTotal() === 0) {
+      bookSlotDirectly();
+    } else {
+      setStep('payment');
+    }
+  };
 
   const handleContinueUPI = () => {
     if (!upiId || !upiId.match(/.+@.+/)) {
@@ -156,6 +178,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
   };
 
   const handlePayment = () => {
+    if (calculateTotal() === 0) {
+      bookSlotDirectly();
+      return;
+    }
     if (paymentMethod === 'upi') {
       setStep('upi');
       return;
@@ -176,6 +202,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
     setSubmittingTxn(false);
     setDate(todayDateString);
     setTime(getNextAvailableTimeString());
+    setBookingId('');
     onClose();
   };
 
@@ -347,7 +374,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
                 </Select>
               </div>
               <Button className="w-full" onClick={handleDetailsSubmit}>
-                Continue to Payment
+                {calculateTotal() === 0 ? 'Book Slot' : 'Continue to Payment'}
               </Button>
             </div>
           </div>

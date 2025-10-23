@@ -669,7 +669,7 @@ export default function AdminDashboard() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="carPrice">Car Price/Hour ($)</Label>
+                <Label htmlFor="carPrice">Car Price/Hour (₹)</Label>
                 <Input
                   id="carPrice"
                   type="number"
@@ -694,7 +694,7 @@ export default function AdminDashboard() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bikePrice">Bike Price/Hour ($)</Label>
+                <Label htmlFor="bikePrice">Bike Price/Hour (₹)</Label>
                 <Input
                   id="bikePrice"
                   type="number"

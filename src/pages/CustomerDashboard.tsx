@@ -198,7 +198,7 @@ export const CustomerDashboard: React.FC = () => {
               <Wallet className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$250.00</div>
+              <div className="text-2xl font-bold">₹250.00</div>
               <p className="text-xs text-muted-foreground">Mock balance</p>
             </CardContent>
           </Card>
@@ -278,7 +278,7 @@ export const CustomerDashboard: React.FC = () => {
                           </div>
                           <div>
                             <span className="text-muted-foreground">Amount:</span>
-                            <p className="font-bold text-primary">${booking.totalPrice}</p>
+                            <p className="font-bold text-primary">₹{booking.totalPrice}</p>
                           </div>
                           <div>
                             <span className="text-muted-foreground">Payment:</span>
@@ -332,7 +332,7 @@ export const CustomerDashboard: React.FC = () => {
                           <span className="text-muted-foreground">
                             {booking.vehicleNumber} · {booking.duration}h
                           </span>
-                          <span className="font-medium">${booking.totalPrice}</span>
+                          <span className="font-medium">₹{booking.totalPrice}</span>
                         </div>
                       </CardContent>
                     </Card>
@@ -403,7 +403,7 @@ export const CustomerDashboard: React.FC = () => {
                 <CardDescription>Mock wallet for demonstration</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-4xl font-bold mb-4">$250.00</div>
+                <div className="text-4xl font-bold mb-4">₹250.00</div>
                 <Button>Add Funds</Button>
               </CardContent>
             </Card>
@@ -419,14 +419,14 @@ export const CustomerDashboard: React.FC = () => {
                       <p className="font-medium">Parking Payment</p>
                       <p className="text-sm text-muted-foreground">Times Square Parking</p>
                     </div>
-                    <span className="font-medium text-destructive">-$48.00</span>
+                    <span className="font-medium text-destructive">-₹48.00</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Wallet Topup</p>
                       <p className="text-sm text-muted-foreground">UPI Payment</p>
                     </div>
-                    <span className="font-medium text-success">+$100.00</span>
+                    <span className="font-medium text-success">+₹100.00</span>
                   </div>
                 </div>
               </CardContent>

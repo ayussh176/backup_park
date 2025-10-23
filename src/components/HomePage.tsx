@@ -283,7 +283,7 @@ export const HomePage: React.FC = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-2xl font-bold text-primary">
-                        ${parking.pricePerHour}
+                        ₹{parking.pricePerHour}
                         <span className="text-sm text-muted-foreground">/hr</span>
                       </span>
                       <span className="text-sm font-medium text-success">
