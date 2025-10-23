@@ -17,10 +17,22 @@ import { ParkingSpace, VehicleType, PaymentMethod } from '@/types';
 import { CreditCard, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
+
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   parking: ParkingSpace;
+}
+
+// Utility for next available quarter-hour (returns "HH:mm")
+function getNextAvailableTimeString() {
+  const now = new Date();
+  let minutes = now.getMinutes();
+  let addMinutes = ((Math.ceil(minutes / 15) * 15) - minutes);
+  if (addMinutes === 0) addMinutes = 15;
+  now.setMinutes(minutes + addMinutes);
+  now.setSeconds(0, 0);
+  return now.toTimeString().slice(0, 5);
 }
 
 export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, parking }) => {
@@ -32,8 +44,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
   const [customVehicleNumber, setCustomVehicleNumber] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [time, setTime] = useState('10:00');
+
+  // Date-time states and helpers
+  const todayDateString = new Date().toISOString().split('T')[0];
+  const [date, setDate] = useState(todayDateString);
+  const [time, setTime] = useState(getNextAvailableTimeString());
   const [duration, setDuration] = useState('2');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('upi');
   const [bookingId, setBookingId] = useState<string>('');
@@ -56,8 +71,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
       setShowPaymentInstructions(false);
       setTxnResultMsg('');
       setSubmittingTxn(false);
+      setDate(todayDateString);
+      setTime(getNextAvailableTimeString());
     }
   }, [isOpen]);
+
+  // Date-time sync logic
+  useEffect(() => {
+    if (date === todayDateString) {
+      const minTime = getNextAvailableTimeString();
+      if (time < minTime) setTime(minTime);
+    }
+  }, [date]); // runs if date changes
 
   const availableSlots = selectedVehicleType
     ? parking.slots.filter(s => s.vehicleType === selectedVehicleType && s.status === 'available')
@@ -87,7 +112,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
     const hours = parseInt(duration);
     return slot.pricePerHour * hours;
   };
-  //
   // UPI deep link and QR
   const upiPayAmount = calculateTotal();
   const upiVPA = 'yash48ashwin@oksbi';
@@ -102,16 +126,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
     setShowPaymentInstructions(true);
   };
 
-  // STEP: Submit UPI Txn Ref to backend for verification
   const handleConfirmUPI = async () => {
     if (!txnRef) {
       toast.error('Please enter your UPI transaction reference');
       return;
     }
     setSubmittingTxn(true);
-    // Prepare request payload
     const paymentData = {
-      payment_id: bookingId,       // This is your booking/payment ID from context (update as needed)
+      payment_id: bookingId,
       upi_txn_id: txnRef,
     };
     try {
@@ -152,8 +174,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
     setShowPaymentInstructions(false);
     setTxnResultMsg('');
     setSubmittingTxn(false);
+    setDate(todayDateString);
+    setTime(getNextAvailableTimeString());
     onClose();
   };
+
+  // Helper to get min time string for Input[type="time"]
+  const minTimeStr = date === todayDateString ? getNextAvailableTimeString() : '00:00';
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -278,7 +305,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
+                    min={todayDateString}
                   />
                 </div>
                 <div className="space-y-2">
@@ -287,7 +314,20 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, par
                     id="time"
                     type="time"
                     value={time}
-                    onChange={(e) => setTime(e.target.value)}
+                    min={minTimeStr}
+                    onChange={(e) => {
+                      if (date === todayDateString) {
+                        const minTime = getNextAvailableTimeString();
+                        if (e.target.value < minTime) {
+                          toast.error(`Please pick a valid time (minimum: ${minTime})`);
+                          setTime(minTime);
+                        } else {
+                          setTime(e.target.value);
+                        }
+                      } else {
+                        setTime(e.target.value);
+                      }
+                    }}
                   />
                 </div>
               </div>

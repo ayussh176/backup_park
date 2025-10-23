@@ -225,6 +225,8 @@ export const OwnerDashboard: React.FC = () => {
       isOpen: true,
       slots,
       description,
+      car: false,
+      bike: false
     };
 
     addParkingSpace(newParking);
