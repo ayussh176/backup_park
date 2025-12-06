@@ -8,8 +8,7 @@ from django.http import JsonResponse
 from .models import Payment
 
 def upi_qr_image(request, amount):
-    upi_link = f"upi://pay?pa=yash48ashwin@oksbil&pn=Parking+Payment&am={amount}&cu=INR"
-    img = qrcode.make(upi_link)
+    upi_link = f"upi://pay?pa=yash48ashwin@oksbi&pn=Parking+Payment&am={amount}&tn=Parking+Slot+Booking&tr=TXN{payment_id}&cu=INR"    img = qrcode.make(upi_link)
     response = HttpResponse(content_type="image/png")
     img.save(response, "PNG")
     return response
