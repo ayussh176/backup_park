@@ -11,7 +11,7 @@ from .models import Payment
 def upi_qr_image(request, amount):
     upi_link = f"upi://pay?pa=yash48ashwin@oksbi&pn=Parking+Payment&am={amount}&tn=Parking+Slot+Booking&tr=TXN{int(time.time())}&cu=INR"
     img = qrcode.make(upi_link)
-        response = HttpResponse(content_type="image/png")
+            response = HttpResponse(content_type="image/png")
     img.save(response, "PNG")
     return response
 
